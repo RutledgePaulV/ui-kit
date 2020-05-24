@@ -9,6 +9,9 @@
 (defcard-rg string-field
   [ui/schema->form string?])
 
+(defcard-rg inline-label
+  [ui/schema->form [string? {:ui-kit/label "My Label"}]])
+
 (defcard-rg int-field
   [ui/schema->form int?])
 
@@ -37,7 +40,12 @@
   [ui/schema->form [:and string? int?]])
 
 (defcard-rg oring
-  [ui/schema->form [:or string? int?]])
+  [ui/schema->form
+   [:or
+    [:map
+     [:address string?]]
+    [:map
+     [:anonymous boolean?]]]])
 
 (defcard-rg address-form
   [ui/schema->form
@@ -53,7 +61,6 @@
     [:map
      [:street string?]
      [:city string?]
-     [:zip int?]
      [:state [:enum "Illinois" "Minnesota"]]]]])
 
 (defcard-rg data->form

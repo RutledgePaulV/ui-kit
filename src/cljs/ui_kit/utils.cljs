@@ -1,7 +1,8 @@
-(ns ui-kit.utils)
+(ns ui-kit.utils
+  (:require [ui-kit.semantic :as sa]))
 
 (defn vec-insert [coll pos item]
-  (vec (concat (subvec coll 0 pos) [item] (subvec coll (inc pos)))))
+  (vec (concat (subvec coll 0 pos) [item] (subvec coll pos))))
 
 (defn vec-remove [coll pos]
   (vec (concat (subvec coll 0 pos) (subvec coll (inc pos)))))
@@ -13,21 +14,55 @@
         (assoc b a-item)
         (assoc a b-item))))
 
+(defn has-attrs? [cv]
+  (map? (second cv)))
+
+(defn normalize [cv]
+  (if (has-attrs? cv)
+    cv
+    (vec-insert cv 1 {})))
+
 (defn get-attr
   ([component-vector key]
    (get-attr component-vector key nil))
   ([component-vector key default]
-   (if (map? (second component-vector))
-     (or (get-in component-vector [1 key]) default)
-     default)))
+   (or (get-in (normalize component-vector) [1 key]) default)))
 
 (defn assoc-attrs [component-vector & key+value]
   (assert (even? (count key+value)) "Must have a value for every key.")
-  (if (map? (second component-vector))
-    (update component-vector 1 merge (apply hash-map key+value))
-    (vec-insert component-vector 1 (apply hash-map key+value))))
+  (update (normalize component-vector) 1 merge (apply hash-map key+value)))
 
 (defn update-attr [component-vector key fun & args]
   (let [existing  (get-attr component-vector key)
         new-value (apply fun existing args)]
     (assoc-attrs component-vector key new-value)))
+
+(defn get-attrs [cv]
+  (second (normalize cv)))
+
+(defn form-field? [cv]
+  (identical? sa/form-field (first cv)))
+
+(defn get-children [cv]
+  (drop 2 (normalize cv)))
+
+(defn has-children? [cv]
+  (not-empty (get-children cv)))
+
+(defn has-label? [cv]
+  (or
+    (some? (:label (get-attrs cv)))
+    (some (fn [x] (= (first x) :label)) (get-children cv))))
+
+(defn prepend-child [cv child]
+  (vec-insert (normalize cv) 2 child))
+
+(defn set-label-if-unset [cv label]
+  (let [has (has-label? cv)]
+    (cond
+      (and (form-field? cv) (has-children? cv) (not has))
+      (prepend-child cv [:label label])
+      (and (form-field? cv) (not has))
+      (assoc-attrs cv :label label)
+      :otherwise
+      cv)))

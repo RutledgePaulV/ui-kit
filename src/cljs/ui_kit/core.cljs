@@ -15,29 +15,35 @@
   node)
 
 (defmethod compile-form :and [{:keys [children] :as node}]
-  (into [sa/form-group {}] children))
+  (into [sa/form-group {}]
+        (for [[index child] (map-indexed vector children)]
+          (utils/assoc-attrs child :key index))))
 
-(defmethod compile-form :or [{:keys [children] :as node}]
+(defmethod compile-form :or [{:keys [props children] :as node}]
   (let [selected-option (reagent.core/atom 0)]
     (fn []
-      [sa/form-group
-       [sa/form-select
-        {:options   (for [[index child] (map-indexed vector children)]
-                      {:key index :value index :text (str "Option " index)})
-         :on-change (fn [event data]
-                      (reset! selected-option (.-value data)))}]
-       (nth children @selected-option)])))
+      [:div {}
+       [sa/form-field
+        [:label
+         (or (:ui-kit/label props) "Select variant")]
+        [sa/form-select
+         {:options   (for [[index child] (map-indexed vector children)]
+                       {:key index :value index :text (str "Option " index)})
+          :on-change (fn [event data]
+                       (reset! selected-option (.-value data)))}]]
+       [sa/form-group
+        (nth children @selected-option)]])))
 
-(defmethod compile-form :map [{:keys [children] :as node}]
+(defmethod compile-form :map [node]
   [sa/form-group
-   (for [[index [attr _ child]] (map-indexed vector children)]
-     [sa/form-field {:key index} [:label attr] child])])
+   (for [[attr props child] (:children node)]
+     (with-meta (utils/set-label-if-unset child attr) {:key attr}))])
 
 (defmethod compile-form :multi [{:keys [] :as node}]
   )
 
-(defmethod compile-form :maybe [{:keys [] :as node}]
-  )
+(defmethod compile-form :maybe [{[child] :children :as node}]
+  (utils/assoc-attrs child :required false))
 
 (defmethod compile-form :vector [{[child-template] :children :as node}]
   (let [children (reagent.core/atom [{:id (random-uuid) :node child-template}])]
@@ -75,91 +81,101 @@
                                                    :node child-template}))))}
         [sa/icon {:name "plus" :size "small"}]]])))
 
-(defmethod compile-form :enum [{:keys [schema] :as node}]
+(defmethod compile-form :enum [{:keys [props schema] :as node}]
   (let [raw-children (m/children schema)]
-    [sa/form-select
-     {:options (for [child raw-children]
-                 {:key child :value child :text child})}]))
+    [sa/form-field {:required (not (:optional props false))}
+     [sa/form-select
+      {:options (for [child raw-children]
+                  {:key child :value child :text child})}]]))
 
 (defmethod compile-form := [{:keys [schema] :as node}]
   (let [[value] (m/children schema)]
     [sa/form-input {:value value :disabled true}]))
 
 (defmethod compile-form :tuple [{:keys [children] :as node}]
-  [sa/form-group {:inline true :widths :equal}
-   (for [[index child] (map-indexed vector children)]
-     [sa/form-field {:key index} child])])
+  (into [sa/form-group {:inline true}]
+        (for [[index child] (map-indexed vector children)]
+          ^{:key index} child)))
 
-(defmethod compile-form :re [node]
-  [sa/form-input {:type :text}])
+(defmethod compile-form :re [{:keys [props] :as node}]
+  [sa/form-field {:required (not (:optional props false))}
+   (when-some [label (:ui-kit/label props)] [:label label])
+   [sa/form-input {:type :text}]])
 
-(defmethod compile-form 'string? [node]
-  [sa/form-input {:type :text}])
+(defmethod compile-form 'string? [{:keys [props] :as node}]
+  [sa/form-field {:required (not (:optional props false))}
+   (when-some [label (:ui-kit/label props)] [:label label])
+   [sa/form-input {:type :text}]])
 
-(defmethod compile-form 'int? [node]
+(defmethod compile-form 'int? [{:keys [props] :as node}]
+  [sa/form-field {:required (not (:optional props false))}
+   (when-some [label (:ui-kit/label props)] [:label label])
+   [sa/form-input {:type :number}]])
+
+(defmethod compile-form 'integer? [{:keys [props] :as node}]
+  [sa/form-field {:required (not (:optional props false))}
+   (when-some [label (:ui-kit/label props)] [:label label])
+   [sa/form-input {:type :number}]])
+
+(defmethod compile-form 'boolean? [{:keys [props] :as node}]
+  [sa/form-field {:required (not (:optional props false))}
+   [sa/form-input {:type :checkbox}]])
+
+(defmethod compile-form 'number? [{:keys [props] :as node}]
   [sa/form-input {:type :number}])
 
-(defmethod compile-form 'integer? [node]
-  [sa/form-input {:type :number}])
-
-(defmethod compile-form 'boolean? [node]
-  [sa/form-input {:type :checkbox}])
-
-(defmethod compile-form 'number? [node]
-  [sa/form-input {:type :number}])
-
-(defmethod compile-form 'pos-int? [node]
+(defmethod compile-form 'pos-int? [{:keys [props] :as node}]
   [sa/form-input {:type :number :min 1}])
 
-(defmethod compile-form 'neg-int? [node]
+(defmethod compile-form 'neg-int? [{:keys [props] :as node}]
   [sa/form-input {:type :number :max -1}])
 
-(defmethod compile-form 'nat-int? [node]
+(defmethod compile-form 'nat-int? [{:keys [props] :as node}]
   [sa/form-input {:type :number :min 0}])
 
-(defmethod compile-form 'double? [node]
+(defmethod compile-form 'double? [{:keys [props] :as node}]
   [sa/form-input {:type :number}])
 
-(defmethod compile-form 'float? [node]
+(defmethod compile-form 'float? [{:keys [props] :as node}]
   [sa/form-input {:type :number}])
 
-(defmethod compile-form 'ident? [node]
+(defmethod compile-form 'ident? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'simple-ident? [node]
+(defmethod compile-form 'simple-ident? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'qualified-ident? [node]
+(defmethod compile-form 'qualified-ident? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'keyword? [node]
+(defmethod compile-form 'keyword? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'simple-keyword? [node]
+(defmethod compile-form 'simple-keyword? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'qualified-keyword? [node]
+(defmethod compile-form 'qualified-keyword? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'symbol? [node]
+(defmethod compile-form 'symbol? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'simple-symbol? [node]
+(defmethod compile-form 'simple-symbol? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'qualified-symbol? [node]
+(defmethod compile-form 'qualified-symbol? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'uuid? [node]
+(defmethod compile-form 'uuid? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'uri? [node]
+(defmethod compile-form 'uri? [{:keys [props] :as node}]
   [sa/form-input {:type :url}])
 
-(defmethod compile-form 'decimal? [node]
+(defmethod compile-form 'decimal? [{:keys [props] :as node}]
   [sa/form-input {:type :text}])
 
-(defmethod compile-form 'inst? [node]
+(defmethod compile-form 'inst? [{:keys [props] :as node}]
   [sa/form-input {:type :datetime-local}])
 
 

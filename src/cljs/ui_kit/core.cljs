@@ -6,19 +6,22 @@
   (fn [schema children path options]
     (m/name schema)))
 
-(defmethod compile-form :and [_ children _ _]
+(defmethod compile-form :default [schema children path options]
   )
 
-(defmethod compile-form :or [_ children _ _]
+(defmethod compile-form :and [schema children path options]
   )
 
-(defmethod compile-form :map [_ children _ _]
+(defmethod compile-form :or [schema children path options]
   )
 
-(defmethod compile-form :multi [_ children _ _]
+(defmethod compile-form :map [schema children path options]
   )
 
-(defmethod compile-form :enum [_ children _ _]
+(defmethod compile-form :multi [schema children path options]
+  )
+
+(defmethod compile-form :enum [schema children path options]
   )
 
 (defn schema->form [schema form-attrs]

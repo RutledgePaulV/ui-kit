@@ -13,6 +13,15 @@
   :middleware
   [lein-git-down.plugin/inject-properties]
 
+  :profiles
+  {:dev {:source-paths   ["repl"]
+         :dependencies   [[com.bhauman/figwheel-main "0.2.5"]
+                          [cider/piggieback "0.5.0"]
+                          [devcards "0.2.5"]]
+         :resource-paths ["target"]
+         :repl-options   {:init-ns          user
+                          :nrepl-middleware [cider.piggieback/wrap-cljs-repl]}}}
+
   :repositories
   [["public-github" {:url "git://github.com"}]]
 
@@ -20,7 +29,4 @@
   ["src/clj" "src/cljc" "src/cljs"]
 
   :test-paths
-  ["test/clj" "test/cljs"]
-
-  :repl-options
-  {:init-ns ui-kit.core})
+  ["test/clj" "test/cljs"])

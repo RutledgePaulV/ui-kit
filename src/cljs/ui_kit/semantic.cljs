@@ -2,7 +2,6 @@
   (:require
     [reagent.core :as r]
     [cljsjs.semantic-ui-react]
-    [cljsjs.semantic-ui-calendar-react]
     [clojure.string :as strings]
     [goog.object :as goog])
   (:refer-clojure :exclude [comment list]))
@@ -117,8 +116,14 @@
 (def modal-content (component "ModalContent"))
 (def modal-description (component "ModalDescription"))
 (def modal-header (component "ModalHeader"))
+(def mount-node (component "MountNode"))
 (def pagination (component "Pagination"))
 (def pagination-item (component "PaginationItem"))
+(def placeholder (component "Placeholder"))
+(def placeholder-header (component "PlaceholderHeader"))
+(def placeholder-image (component "PlaceholderImage"))
+(def placeholder-line (component "PlaceholderLine"))
+(def placeholder-paragraph (component "PlaceholderParagraph"))
 (def popup (component "Popup"))
 (def popup-content (component "PopupContent"))
 (def popup-header (component "PopupHeader"))
@@ -129,6 +134,7 @@
 (def rail (component "Rail"))
 (def rating (component "Rating"))
 (def rating-icon (component "RatingIcon"))
+(def ref (component "Ref"))
 (def responsive (component "Responsive"))
 (def reveal (component "Reveal"))
 (def reveal-content (component "RevealContent"))
@@ -138,6 +144,7 @@
 (def search-results (component "SearchResults"))
 (def segment (component "Segment"))
 (def segment-group (component "SegmentGroup"))
+(def segment-inline (component "SegmentInline"))
 (def select (component "Select"))
 (def sidebar (component "Sidebar"))
 (def sidebar-pushable (component "SidebarPushable"))
@@ -167,10 +174,16 @@
 (def transitionable-portal (component "TransitionablePortal"))
 (def visibility (component "Visibility"))
 
+
 (clojure.core/comment
   (doseq [k (sort (map name (goog/getKeys js/semanticUIReact)))]
     (println (pr-str
                (clojure.core/list
                  'def
-                 (symbol (strings/lower-case k))
-               (clojure.core/list 'component k))))))
+                 (-> (name k)
+                     (strings/replace #"[a-z][A-Z]"
+                                      (fn [match]
+                                        (str (first match) "-" (second match))))
+                     (strings/lower-case)
+                     (symbol))
+                 (clojure.core/list 'component k))))))

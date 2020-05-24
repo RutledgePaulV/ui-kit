@@ -1,11 +1,11 @@
-(ns ui-kit.main
+(ns ui-kit.components
   (:require-macros
     [devcards.core :refer [defcard-rg]])
   (:require [devcards.core :as cards]
-            [ui-kit.forms]
             [ui-kit.semantic :as sa]
-            [ui-kit.core :as ui]
-            [ui-kit.components]))
+            [ui-kit.core :as ui]))
 
 
-(cards/start-devcard-ui!*)
+(defcard-rg error-message
+  [sa/message {:error true} "Test"])
+

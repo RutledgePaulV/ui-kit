@@ -10,13 +10,13 @@
   [ui/schema->form string?])
 
 (defcard-rg inline-label
-  [ui/schema->form [string? {:ui-kit/label "My Label"}]])
+  [ui/schema->form [string? {:sui/label "My Label"}]])
 
 (defcard-rg int-field
   [ui/schema->form int?])
 
 (defcard-rg boolean-field
-  [ui/schema->form boolean?])
+  [ui/schema->form [boolean? {:sui/label "Do you like cheese?"}]])
 
 (defcard-rg enum-field
   [ui/schema->form [:enum "Dogs" "Cats" "Birds"]])
@@ -29,6 +29,14 @@
 
 (defcard-rg uri
   [ui/schema->form uri?])
+
+(defcard-rg not-understood
+  [ui/schema->form
+   [:map
+    [:place
+     [:map
+      [:value zero?]
+      [:value2 string?]]]]])
 
 (defcard-rg vector
   [ui/schema->form [:vector string?]])

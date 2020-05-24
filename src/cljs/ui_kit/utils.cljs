@@ -66,3 +66,10 @@
       (assoc-attrs cv :label label)
       :otherwise
       cv)))
+
+(defn select-ns [m nspace]
+  (into {}
+        (keep (fn [[k v]]
+                  (when (= (some-> (namespace k) name) (name nspace))
+                    [(keyword (name k)) v]))
+              m)))

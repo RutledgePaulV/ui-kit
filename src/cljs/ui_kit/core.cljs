@@ -69,12 +69,17 @@
                                                    :node child-template}))))}
         [sa/icon {:name "plus" :size "small"}]]])))
 
-(defmethod compile-form :enum [{:keys [name path children] :as node}]
-  [sa/form-select
-   {:options (for [child children]
-               {:key child :value child :text child})}])
+(defmethod compile-form :enum [{:keys [schema] :as node}]
+  (let [raw-children (m/children schema)]
+    [sa/form-select
+     {:options (for [child raw-children]
+                 {:key child :value child :text child})}]))
 
-(defmethod compile-form :tuple [{:keys [name children] :as node}]
+(defmethod compile-form := [{:keys [schema] :as node}]
+  (let [[value] (m/children schema)]
+    [sa/form-input {:value value :disabled true}]))
+
+(defmethod compile-form :tuple [{:keys [children] :as node}]
   [sa/form-group {:inline true :widths :equal}
    (for [[index child] (map-indexed vector children)]
      [sa/form-field {:key index} child])])

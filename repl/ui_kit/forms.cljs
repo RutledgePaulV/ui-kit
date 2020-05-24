@@ -30,6 +30,9 @@
 (defcard-rg vector
   [ui/schema->form [:vector string?]])
 
+(defcard-rg predetermined
+  [ui/schema->form [:= "Testing"]])
+
 (defcard-rg address-form
   [ui/schema->form
    [:map
@@ -37,6 +40,15 @@
     [:city string?]
     [:zip int?]
     [:state [:enum "Illinois" "Minnesota"]]]])
+
+(defcard-rg multi-address
+  [ui/schema->form
+   [:vector
+    [:map
+     [:street string?]
+     [:city string?]
+     [:zip int?]
+     [:state [:enum "Illinois" "Minnesota"]]]]])
 
 (defcard-rg data->form
   [ui/data->form

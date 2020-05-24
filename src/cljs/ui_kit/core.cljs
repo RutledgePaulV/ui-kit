@@ -14,18 +14,24 @@
 (defmethod compile-form :default [{:keys [] :as node}]
   node)
 
-(defmethod compile-form :and [{:keys [] :as node}]
-  )
+(defmethod compile-form :and [{:keys [children] :as node}]
+  (into [sa/form-group {}] children))
 
-(defmethod compile-form :or [{:keys [] :as node}]
-  )
+(defmethod compile-form :or [{:keys [children] :as node}]
+  (let [selected-option (reagent.core/atom 0)]
+    (fn []
+      [sa/form-group
+       [sa/form-select
+        {:options   (for [[index child] (map-indexed vector children)]
+                      {:key index :value index :text (str "Option " index)})
+         :on-change (fn [event data]
+                      (reset! selected-option (.-value data)))}]
+       (nth children @selected-option)])))
 
 (defmethod compile-form :map [{:keys [children] :as node}]
   [sa/form-group
    (for [[index [attr _ child]] (map-indexed vector children)]
-     [sa/form-field {:key index}
-      [:label attr]
-      child])])
+     [sa/form-field {:key index} [:label attr] child])])
 
 (defmethod compile-form :multi [{:keys [] :as node}]
   )
@@ -36,7 +42,7 @@
 (defmethod compile-form :vector [{[child-template] :children :as node}]
   (let [children (reagent.core/atom [{:id (random-uuid) :node child-template}])]
     (fn []
-      [sa/form-group
+      [:div {}
        (let [childs @children]
          (for [[index {:keys [id node]}] (map-indexed vector childs)]
            [sa/form-group {:inline true :key id}
@@ -172,7 +178,10 @@
   ([schema]
    (schema->form schema {}))
   ([schema data]
-   (m/accept schema compile-form-wrapper)))
+   (let [result (m/accept schema compile-form-wrapper)]
+     (if (fn? result)
+       [sa/form {} [result]]
+       [sa/form {} result]))))
 
 (defn data->form
   ([data]

@@ -33,6 +33,12 @@
 (defcard-rg predetermined
   [ui/schema->form [:= "Testing"]])
 
+(defcard-rg anding
+  [ui/schema->form [:and string? int?]])
+
+(defcard-rg oring
+  [ui/schema->form [:or string? int?]])
+
 (defcard-rg address-form
   [ui/schema->form
    [:map

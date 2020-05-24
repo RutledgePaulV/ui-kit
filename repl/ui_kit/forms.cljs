@@ -55,7 +55,17 @@
     [:map
      [:anonymous boolean?]]]])
 
-(defcard-rg address-form
+(defcard-rg multi
+  [ui/schema->form
+   [:multi {:dispatch :type}
+    [:cat [:map
+           [:type [:= :cat]]
+           [:sound [:enum "meow" "hiss"]]]]
+    [:dog [:map
+           [:type [:= :dog]]
+           [:sound [:enum "bark" "woof"]]]]]])
+
+(defcard-rg maps
   [ui/schema->form
    [:map
     [:street string?]
@@ -63,7 +73,7 @@
     [:zip int?]
     [:state [:enum "Illinois" "Minnesota"]]]])
 
-(defcard-rg multi-address
+(defcard-rg vector-of-maps
   [ui/schema->form
    [:vector
     [:map

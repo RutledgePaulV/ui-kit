@@ -1,5 +1,6 @@
 (ns ui-kit.utils
-  (:require [ui-kit.semantic :as sa]))
+  (:require [ui-kit.semantic :as sa]
+            [clojure.string :as strings]))
 
 (defn vec-insert [coll pos item]
   (vec (concat (subvec coll 0 pos) [item] (subvec coll pos))))
@@ -73,3 +74,12 @@
                   (when (= (some-> (namespace k) name) (name nspace))
                     [(keyword (name k)) v]))
               m)))
+
+(defn key->label [k]
+  (-> k
+      (name)
+      (strings/capitalize)
+      (strings/replace
+        #"[a-z]-[a-z]"
+        (fn [match]
+          (str (first match) " " (strings/upper-case (second match)))))))

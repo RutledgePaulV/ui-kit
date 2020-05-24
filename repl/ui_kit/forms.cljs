@@ -21,6 +21,15 @@
 (defcard-rg tuple
   [ui/schema->form [:tuple string? string?]])
 
+(defcard-rg datetime
+  [ui/schema->form inst?])
+
+(defcard-rg uri
+  [ui/schema->form uri?])
+
+(defcard-rg vector
+  [ui/schema->form [:vector string?]])
+
 (defcard-rg address-form
   [ui/schema->form
    [:map

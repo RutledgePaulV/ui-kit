@@ -9,6 +9,15 @@
 (defcard-rg string-field
   [ui/schema->form string?])
 
+(defcard-rg string-field-with-data
+  [ui/schema->form string? "data value"])
+
+(defcard-rg string-field-with-default-value
+  [ui/schema->form [string? {:default "default value"}]])
+
+(defcard-rg optional-field
+  [ui/schema->form [string? {:optional true :sui/label "Optional Field"}]])
+
 (defcard-rg inline-label
   [ui/schema->form [string? {:sui/label "My Label"}]])
 
@@ -60,10 +69,10 @@
    [:multi {:dispatch :type}
     [:cat [:map
            [:type [:= :cat]]
-           [:sound [:enum "meow" "hiss"]]]]
+           [:sound [:enum "meow" "hiss" "silence"]]]]
     [:dog [:map
            [:type [:= :dog]]
-           [:sound [:enum "bark" "woof"]]]]]])
+           [:sound [:enum "bark" "growl" "silence"]]]]]])
 
 (defcard-rg maps
   [ui/schema->form
@@ -79,7 +88,8 @@
     [:map
      [:street string?]
      [:city string?]
-     [:state [:enum "Illinois" "Minnesota"]]]]])
+     [:state [:enum "Illinois" "Minnesota"]]]]
+   [{:street "131 W Herring Drive"}]])
 
 (defcard-rg data->form
   [ui/data->form

@@ -1,6 +1,7 @@
 (ns ui-kit.core
   (:require [ui-kit.semantic :as sa]
             [ui-kit.utils :as utils]
+            [ui-kit.lenses :as lens]
             [malli.provider :as mp]
             [malli.core :as m]
             [cljs.pprint :as pprint]))
@@ -24,7 +25,7 @@
 (defmethod compile-form :and [{:keys [children] :as node}]
   (into [sa/form-group {}]
         (for [[index child] (map-indexed vector children)]
-          (utils/assoc-attrs child :key index))))
+          (lens/assoc-attr child :key index))))
 
 (defmethod compile-form :or [{:keys [props children] :as node}]
   (let [selected-option (reagent.core/atom 0)]
@@ -43,7 +44,7 @@
   [sa/form-group
    (for [[attr props child] (:children node)]
      (let [label (utils/key->label attr)]
-       (with-meta (utils/set-label-if-unset child label) {:key attr})))])
+       (with-meta (lens/set-label-if-unset child label) {:key attr})))])
 
 (defmethod compile-form :multi [{:keys [props children] :as node}]
   (let [dispatch (get-in props [:dispatch])]
@@ -66,7 +67,7 @@
       (error-message node "only multi schemas that dispatch by keyword or equality are supported."))))
 
 (defmethod compile-form :maybe [{[child] :children :as node}]
-  (utils/assoc-attrs child :required false))
+  (lens/assoc-attr child :required false))
 
 (defmethod compile-form :vector [{[child-template] :children :as node}]
   (let [children (reagent.core/atom [{:id (random-uuid) :node child-template}])]
@@ -109,12 +110,16 @@
         (for [[index child] (map-indexed vector children)]
           ^{:key index} child)))
 
-(defn simple-input [{:keys [props]} input-field]
+(defn simple-input [{:keys [props data path] :as node} input-field]
   (let [all-attrs (utils/select-ns props :sui)]
     [sa/form-field
      (merge {:required (not (:optional props false))} (dissoc all-attrs :label))
      (when-some [label (:label all-attrs)] [:label label])
-     input-field]))
+     (cond-> input-field
+       (some? (get-in data path))
+       (lens/assoc-attr :value (get-in data path))
+       (and (nil? (get-in data path)) (some? (:default props)))
+       (lens/assoc-attr :value (:default props)))]))
 
 (defmethod compile-form :enum [{:keys [schema] :as node}]
   (let [raw-children (m/children schema)]
@@ -156,12 +161,13 @@
 (defmethod compile-form 'inst? [node]
   (simple-input node [sa/form-input {:type :datetime-local}]))
 
-(defn compile-form-wrapper [schema children path options]
+(defn compile-form-wrapper [data schema children path options]
   (let [schema-name  (m/name schema)
         schema-props (m/properties schema)]
     (compile-form
       {:name     schema-name
        :schema   schema
+       :data     data
        :props    schema-props
        :children children
        :path     path
@@ -169,9 +175,9 @@
 
 (defn schema->form
   ([schema]
-   (schema->form schema {}))
+   (schema->form schema nil))
   ([schema data]
-   (let [result (m/accept schema compile-form-wrapper)]
+   (let [result (m/accept schema (partial compile-form-wrapper data))]
      (if (fn? result)
        [sa/form {:warning true :error true} [result]]
        [sa/form {:warning true :error true} result]))))

@@ -25,28 +25,27 @@
     :otherwise
     cv))
 
-(defn walk-components* [fun root]
-  (cond
-    (and (vector? root) (fn? (first root)))
-    (->> (drop 1 root)
-         (into [(fn [& args]
-                  (walk-components* fun (apply (first root) args)))])
-         (fun))
-    (and (vector? root) (<= 2 (count root)) (map? (second root)))
-    (->> (keep #(walk-components* fun %) (drop 2 root))
-         (into [(first root) (second root)])
-         (fun))
-    (and (vector? root) (<= 1 (count root)) (not (map? (second root))))
-    (->> (keep #(walk-components* fun %) (drop 1 root))
-         (into [(first root)])
-         (fun))
-    :otherwise
-    root))
-
 (defn walk-components
   "Walk over every component vector within root and apply fun to each."
   [fun root]
-  (walk-components* fun (normalize root)))
+  (letfn [(walk-components* [fun root]
+            (cond
+              (and (vector? root) (fn? (first root)))
+              (->> (drop 1 root)
+                   (into [(fn [& args]
+                            (walk-components* fun (apply (first root) args)))])
+                   (fun))
+              (and (vector? root) (<= 2 (count root)) (map? (second root)))
+              (->> (keep #(walk-components* fun %) (drop 2 root))
+                   (into [(first root) (second root)])
+                   (fun))
+              (and (vector? root) (<= 1 (count root)) (not (map? (second root))))
+              (->> (keep #(walk-components* fun %) (drop 1 root))
+                   (into [(first root)])
+                   (fun))
+              :otherwise
+              root))]
+    (walk-components* fun (normalize root))))
 
 (defn walk-where [pred fun root]
   (walk-components #(if (pred %) (fun %) %) root))

@@ -40,10 +40,12 @@
         (nth children @selected-option)]])))
 
 (defmethod compile-form :map [node]
-  [sa/form-group
-   (for [[attr props child] (:children node)]
-     (let [label (utils/kebab->title attr)]
-       (with-meta (lens/set-label-if-unset child label) {:key attr})))])
+  (into [sa/form-group]
+        (for [[attr props child] (:children node)]
+          (let [label (utils/kebab->title attr)]
+            (-> child
+                (lens/set-label-if-unset label)
+                (lens/assoc-attr :key attr))))))
 
 (defmethod compile-form :multi [{:keys [props children] :as node}]
   (let [dispatch (get-in props [:dispatch])]
@@ -57,8 +59,9 @@
            [sa/form-field {:required (not (:optional props false))}
             [:label label]
             [sa/form-select
-             {:options   (for [[dispatch-value] children]
-                           {:key dispatch-value :value dispatch-value :text dispatch-value})
+             {:options   (into []
+                               (for [[dispatch-value] children]
+                                 {:key dispatch-value :value dispatch-value :text dispatch-value}))
               :on-change #(reset! selected-option (keyword (.-value %2)))}]]
            [sa/form-group {}
             (some-> (get by-dv @selected-option) (nth 2))]]))
@@ -71,38 +74,38 @@
 (defmethod compile-form :vector [{[child-template] :children :as node}]
   (let [children (reagent.core/atom [{:id (random-uuid) :node child-template}])]
     (fn []
-      [:div {}
-       (let [childs @children]
-         (for [[index {:keys [id node]}] (map-indexed vector childs)]
-           [sa/form-group {:inline true :key id}
-            node
+      (conj (into [:div {}]
+                  (let [childs @children]
+                    (for [[index {:keys [id node]}] (map-indexed vector childs)]
+                      [sa/form-group {:inline true :key id}
+                       node
+                       [sa/button {:icon     true
+                                   :disabled (= 0 index)
+                                   :on-click (fn []
+                                               (swap! children
+                                                      (fn [old]
+                                                        (utils/vec-swap old index (dec index)))))}
+                        [sa/icon {:name "arrow up" :size :small}]]
+                       [sa/button {:icon     true
+                                   :disabled (= (count childs) (inc index))
+                                   :on-click (fn []
+                                               (swap! children
+                                                      (fn [old]
+                                                        (utils/vec-swap old index (inc index)))))}
+                        [sa/icon {:name "arrow down" :size :small}]]
+                       [sa/button {:icon     true
+                                   :on-click (fn []
+                                               (swap! children
+                                                      (fn [old]
+                                                        (utils/vec-remove old index))))}
+                        [sa/icon {:name "delete" :size :small}]]])))
             [sa/button {:icon     true
-                        :disabled (= 0 index)
                         :on-click (fn []
                                     (swap! children
                                            (fn [old]
-                                             (utils/vec-swap old index (dec index)))))}
-             [sa/icon {:name "arrow up" :size :small}]]
-            [sa/button {:icon     true
-                        :disabled (= (count childs) (inc index))
-                        :on-click (fn []
-                                    (swap! children
-                                           (fn [old]
-                                             (utils/vec-swap old index (inc index)))))}
-             [sa/icon {:name "arrow down" :size :small}]]
-            [sa/button {:icon     true
-                        :on-click (fn []
-                                    (swap! children
-                                           (fn [old]
-                                             (utils/vec-remove old index))))}
-             [sa/icon {:name "delete" :size :small}]]]))
-       [sa/button {:icon     true
-                   :on-click (fn []
-                               (swap! children
-                                      (fn [old]
-                                        (conj old {:id   (random-uuid)
-                                                   :node child-template}))))}
-        [sa/icon {:name "plus" :size :large}]]])))
+                                             (conj old {:id   (random-uuid)
+                                                        :node child-template}))))}
+             [sa/icon {:name "plus" :size :large}]]))))
 
 (defmethod compile-form :tuple [{:keys [children] :as node}]
   (into [sa/form-group {:inline true}]
@@ -123,8 +126,8 @@
 (defmethod compile-form :enum [{:keys [schema] :as node}]
   (let [raw-children (m/children schema)]
     (simple-input node [sa/form-select
-                        {:options (for [child raw-children]
-                                    {:key child :value child :text child})}])))
+                        {:options (vec (for [child raw-children]
+                                         {:key child :value child :text child}))}])))
 
 (defmethod compile-form := [{:keys [schema] :as node}]
   (let [[value] (m/children schema)]

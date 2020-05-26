@@ -3,7 +3,9 @@
     [devcards.core :refer [defcard-rg]])
   (:require [devcards.core :as cards]
             [ui-kit.semantic :as sa]
-            [ui-kit.core :as ui]))
+            [ui-kit.core :as ui]
+            [ui-kit.walkers :as walkers]
+            [ui-kit.utils :as utils]))
 
 
 (defcard-rg string-field
@@ -97,3 +99,15 @@
     :city   "Chicago"
     :zip    60632
     :state  "Illinois"}])
+
+(defcard-rg inspect-hiccup
+  [:pre
+   (->> (ui/schema->form
+          [:vector
+           [:map
+            [:street string?]
+            [:city string?]
+            [:state [:enum "Illinois" "Minnesota"]]]]
+          [{:street "131 W Herring Drive"}])
+        (walkers/walk-expand)
+        (utils/ppstr))])

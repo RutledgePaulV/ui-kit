@@ -32,7 +32,8 @@
 
 (defn camel->kebab [k]
   (-> (name k)
-      (strings/replace #"[a-z][A-Z]"
-                       (fn [match]
-                         (str (first match) "-" (second match))))
+      (strings/replace
+        #"[a-z][A-Z]"
+        (fn [match]
+          (str (first match) "-" (second match))))
       (strings/lower-case)))

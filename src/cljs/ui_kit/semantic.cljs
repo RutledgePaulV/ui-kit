@@ -1,4 +1,5 @@
 (ns ui-kit.semantic
+  "SemanticUI as reagent components. Find documentation at https://react.semantic-ui.com/"
   (:require
     [reagent.core :as r]
     [cljsjs.semantic-ui-react]
@@ -176,6 +177,7 @@
 
 
 (clojure.core/comment
+  "Run this to regenerate the above definitions."
   (doseq [k (sort (map name (goog/getKeys js/semanticUIReact)))]
     (println (pr-str
                (clojure.core/list

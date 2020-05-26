@@ -3,8 +3,7 @@
             [ui-kit.utils :as utils]
             [ui-kit.lenses :as lens]
             [malli.provider :as mp]
-            [malli.core :as m]
-            [cljs.pprint :as pprint]))
+            [malli.core :as m]))
 
 (defn dispatch-fun [form]
   (:name form))
@@ -17,7 +16,7 @@
    [sa/message-content
     [:div
      [:p message]
-     [:code [:pre (with-out-str (pprint/pprint {:path path :schema (m/form schema)}))]]]]])
+     [:code [:pre (utils/ppstr {:path path :schema (m/form schema)})]]]]])
 
 (defmethod compile-form :default [node]
   (error-message node "You must add a defmethod to ui-kit.core/compile-form to use this schema."))
@@ -43,14 +42,14 @@
 (defmethod compile-form :map [node]
   [sa/form-group
    (for [[attr props child] (:children node)]
-     (let [label (utils/key->label attr)]
+     (let [label (utils/kebab->title attr)]
        (with-meta (lens/set-label-if-unset child label) {:key attr})))])
 
 (defmethod compile-form :multi [{:keys [props children] :as node}]
   (let [dispatch (get-in props [:dispatch])]
     (cond
       (keyword? dispatch)
-      (let [label           (utils/key->label dispatch)
+      (let [label           (utils/kebab->title dispatch)
             by-dv           (into {} (map (juxt first identity)) children)
             selected-option (reagent.core/atom nil)]
         (fn []
@@ -184,4 +183,6 @@
 
 (defn data->form
   ([data]
-   (schema->form (mp/provide [data]) data)))
+   (data->form data data))
+  ([data-for-schema data]
+   (schema->form (mp/provide [data-for-schema]) data)))

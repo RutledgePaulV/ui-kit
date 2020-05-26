@@ -8,11 +8,14 @@
   (is (= [:div {} [:p {} "Test"]] (walkers/normalize [:div [:p "Test"]]))))
 
 (deftest expand-test
-  (let [inner (fn [] [:div [:p "Inner component"]])
-        outer [:div [inner]]]
+  (let [inner2 (fn [] [:div [:p "inner 2"]])
+        inner  (fn [] [:div [:p "Inner 1"] [inner2]])
+        outer  [:div [inner]]]
     (is (= [:div {}
             [:div {}
-             [:p {} "Inner component"]]]
+             [:p {} "Inner 1"]
+             [:div {}
+              [:p {} "inner 2"]]]]
            (walkers/walk-expand outer)))))
 
 (deftest walk-tags-test

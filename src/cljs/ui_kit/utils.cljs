@@ -29,3 +29,10 @@
         #"[a-z]-[a-z]"
         (fn [match]
           (str (first match) " " (strings/upper-case (second match)))))))
+
+(defn camel->kebab [k]
+  (-> (name k)
+      (strings/replace #"[a-z][A-Z]"
+                       (fn [match]
+                         (str (first match) "-" (second match))))
+      (strings/lower-case)))

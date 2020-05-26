@@ -3,12 +3,26 @@
   (:require
     [reagent.core :as r]
     [cljsjs.semantic-ui-react]
-    [clojure.string :as strings]
-    [goog.object :as goog])
+    [reagent.impl.template :as template]
+    [goog.object :as goog]
+    [ui-kit.utils :as utils])
   (:refer-clojure :exclude [comment list]))
 
+(defonce constructor->name (atom {}))
+
 (defn component [class]
-  (r/adapt-react-class (goog/get js/semanticUIReact class)))
+  (let [clazz (goog/get js/semanticUIReact class)
+        realized (r/adapt-react-class clazz)
+        name (symbol "ui-kit.semantic" (utils/camel->kebab class))]
+    (swap! constructor->name assoc realized name)
+    realized))
+
+(extend-protocol cljs.core/IPrintWithWriter
+  template/NativeWrapper
+  (-pr-writer [o writer opts]
+    (if-some [name (get @constructor->name o)]
+      (write-all writer name)
+      (write-all writer "#object[reagent.impl.template.NativeWrapper]"))))
 
 (def accordion (component "Accordion"))
 (def accordion-accordion (component "AccordionAccordion"))
@@ -182,10 +196,5 @@
     (println (pr-str
                (clojure.core/list
                  'def
-                 (-> (name k)
-                     (strings/replace #"[a-z][A-Z]"
-                                      (fn [match]
-                                        (str (first match) "-" (second match))))
-                     (strings/lower-case)
-                     (symbol))
+                 (utils/camel->kebab k)
                  (clojure.core/list 'component k))))))

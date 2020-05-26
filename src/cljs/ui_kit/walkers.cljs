@@ -18,7 +18,7 @@
       (with-meta
         (into [(first cv) (second cv)] (map normalize (drop 2 cv)))
         (merge (meta cv) {::normalized true}))
-      :otherwise
+      (not-empty cv)
       (with-meta
         (into [(first cv) {}] (map normalize (drop 1 cv)))
         (merge (meta cv) {::normalized true})))

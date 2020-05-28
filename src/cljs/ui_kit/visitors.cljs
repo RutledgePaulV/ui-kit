@@ -10,19 +10,25 @@
   (fn [node cursor attrs]
     (malli/name node)))
 
-(defn error-message [{:keys [path schema]} message]
+(defn get-default-value [node]
+  (let [props (malli/properties node)]
+    (if-some [value (:default props)]
+      value
+      ; TODO
+      ; generate random?
+      ; dispatch by type?
+      ; leave as nil?
+      )))
+
+(defn error-message [node message]
   [sa/message {:error true}
    [sa/message-content
     [:div
      [:p message]
-     [:code [:pre (utils/ppstr {:path path :schema (m/form schema)})]]]]])
+     [:code [:pre (utils/ppstr (m/form node))]]]]])
 
 (defmethod visit :default [node cursor attrs]
-  [sa/message {:error true}
-   [sa/message-content
-    [:div
-     [:p "Unsupported schema"]
-     [:code [:pre (utils/ppstr (malli/form node))]]]]])
+  [error-message node "Unsupported schema. Add a defmethod to ui-kit.visitors/visit to remedy."])
 
 (defmethod visit :and [node cursor attrs]
   (let [children (malli/children node)]
@@ -51,6 +57,41 @@
           (for [[k v] children]
             (let [label (utils/kebab->title k)]
               (with-meta [visit v (r/cursor cursor [k]) {:label label}] {:key k}))))))
+
+; TODO: use fancier r/cursor with lens and lookup table of {row index} to avoid re-rendering
+; each row each time.
+(defmethod visit :vector [node cursor attrs]
+  (let [[child-schema] (malli/children node)
+        child-values (or @cursor [])]
+    (conj (into [:div {}]
+                (for [index (range (count child-values))]
+                  [sa/form-group {:inline true :key (random-uuid)}
+                   [visit child-schema (r/cursor cursor [index]) {}]
+                   [sa/button
+                    {:icon     true
+                     :disabled (= 0 index)
+                     :on-click (fn [] (swap! cursor (fn [old] (utils/vec-swap old index (dec index)))))}
+                    [sa/icon {:name "arrow up" :size :small}]]
+                   [sa/button
+                    {:icon     true
+                     :disabled (= (count child-values) (inc index))
+                     :on-click (fn [] (swap! cursor (fn [old] (utils/vec-swap old index (inc index)))))}
+                    [sa/icon {:name "arrow down" :size :small}]]
+                   [sa/button
+                    {:icon     true
+                     :on-click (fn [] (swap! cursor (fn [old] (utils/vec-remove old index))))}
+                    [sa/icon {:name "delete" :size :small}]]]))
+          [sa/button {:icon     true
+                      :on-click (fn [] (swap! cursor
+                                              (fn [old]
+                                                (let [default (get-default-value child-schema)]
+                                                  (conj old default)))))}
+           [sa/icon {:name "plus" :size :large}]])))
+
+(defmethod visit :tuple [node cursor attrs]
+  (into [sa/form-group {:inline true}]
+        (for [[index child] (map-indexed vector (malli/children node))]
+          [visit child (r/cursor cursor [index]) {}])))
 
 (defmethod visit :enum [node cursor attrs]
   (let [props     (malli/properties node)

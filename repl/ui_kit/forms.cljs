@@ -17,9 +17,11 @@
     [com/inspectable data-atom [:enum "Dogs" "Cats" "Birds"]])
   (r/atom nil))
 
-;(defcard-rg tuple
-;  [com/inspectable [:tuple string? string?]])
-;
+(defcard-rg tuple
+  (fn [data-atom _]
+    [com/inspectable data-atom [:tuple string? string?]])
+  (r/atom [nil nil]))
+
 ;(defcard-rg datetime
 ;  [com/inspectable inst?])
 ;
@@ -34,8 +36,10 @@
 ;      [:value zero?]
 ;      [:value2 string?]]]]])
 ;
-;(defcard-rg vector
-;  [com/inspectable [:vector string?]])
+(defcard-rg vector
+  (fn [data-atom _]
+    [com/inspectable data-atom [:vector string?]])
+  (r/atom []))
 ;
 ;(defcard-rg predetermined
 ;  [com/inspectable [:= "Testing"]])

@@ -21,6 +21,9 @@
 (defn ppstr [x]
   (with-out-str (pprint/pprint x)))
 
+(defn event->value [event]
+  (-> event .-target .-value))
+
 (defn kebab->title [k]
   (-> k
       (name)

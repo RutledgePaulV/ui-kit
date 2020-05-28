@@ -1,6 +1,10 @@
 (ns ui-kit.walkers
   "For walking reagent trees.")
 
+(defn function? [x]
+  (or (fn? x) #?(:clj (instance? clojure.lang.MultiFn x)
+                 :cljs (instance? cljs.core.MultiFn x))))
+
 (defn normalize
   "Ensure component vectors are in [tag attrs & children] form."
   [cv]
@@ -8,20 +12,15 @@
     (some-> cv meta ::normalized)
     cv
     (vector? cv)
-    (cond
-      (fn? (first cv))
-      (into [(with-meta
-               (fn [& args] (normalize (apply (first cv) args)))
-               (merge (meta cv) {::normalized true}))]
-            (rest cv))
-      (map? (second cv))
-      (with-meta
+    (with-meta
+      (cond
+        (function? (first cv))
+        (into [(comp normalize (first cv))] (rest cv))
+        (map? (second cv))
         (into [(first cv) (second cv)] (map normalize (drop 2 cv)))
-        (merge (meta cv) {::normalized true}))
-      (not-empty cv)
-      (with-meta
-        (into [(first cv) {}] (map normalize (drop 1 cv)))
-        (merge (meta cv) {::normalized true})))
+        (not-empty cv)
+        (into [(first cv) {}] (map normalize (drop 1 cv))))
+      (merge (meta cv) {::normalized true}))
     :otherwise
     cv))
 
@@ -30,7 +29,7 @@
   [fun root]
   (letfn [(walk-components* [fun root]
             (cond
-              (and (vector? root) (fn? (first root)))
+              (and (vector? root) (function? (first root)))
               (->> (drop 1 root)
                    (into [(fn [& args]
                             (walk-components* fun (apply (first root) args)))])

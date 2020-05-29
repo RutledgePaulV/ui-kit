@@ -3,8 +3,7 @@
             [ui-kit.semantic :as sa]
             [reagent.core :as r]
             [ui-kit.utils :as utils]
-            [malli.core :as m]
-            [malli.provider :as mp]))
+            [malli.core :as m]))
 
 (defmulti visit
   "Turn a schema node into a reagent component.
@@ -66,11 +65,11 @@
        [sa/form-field
         [:label (or (:sui/label props) "Select variant")]
         [sa/dropdown
-         {:selection    true
-          :search       true
-          :options      (for [index (range (count children))]
-                          {:key index :value index :text (str "Option " index)})
-          :onChange     #(reset! selected-option (.-value %2))}]]
+         {:selection true
+          :search    true
+          :options   (for [index (range (count children))]
+                       {:key index :value index :text (str "Option " index)})
+          :onChange  #(reset! selected-option (.-value %2))}]]
        [sa/form-group
         [visit (nth children @selected-option) cursor {}]]])))
 
@@ -173,10 +172,9 @@
        :defaultValue value
        :options      (vec (for [child (malli/children node)]
                             {:key child :value child :text child}))
-       :onChange     (fn [x data]
-                       (reset! cursor (.-value data)))}]]))
+       :onChange     #(reset! cursor (.-value %2))}]]))
 
-(defn simple-leaf [node cursor attrs type]
+(defn simple-leaf [node cursor attrs mixins]
   (let [props     (malli/properties node)
         all-attrs (utils/select-ns props :sui)
         value     (or (deref cursor) (:default props))
@@ -186,36 +184,28 @@
      (merge {:required required} (dissoc all-attrs :label))
      (when (some? label) [:label label])
      [sa/form-input
-      {:type         type
-       :defaultValue (or value "")
-       :on-blur      #(reset! cursor (utils/event->value %))}]]))
+      (merge {:defaultValue (or value "")
+              :error        (if nil {:content ""})
+              :on-blur      #(reset! cursor (utils/event->value %))}
+             mixins)]]))
+
+(defmethod visit ':re [node cursor attrs]
+  (simple-leaf node cursor attrs {:type :text}))
 
 (defmethod visit 'string? [node cursor attrs]
-  (simple-leaf node cursor attrs :text))
+  (simple-leaf node cursor attrs {:type :text}))
 
 (defmethod visit 'int? [node cursor attrs]
-  (simple-leaf node cursor attrs :number))
+  (simple-leaf node cursor attrs {:type :number}))
+
+(defmethod visit 'pos-int? [node cursor attrs]
+  (simple-leaf node cursor attrs {:type :number}))
 
 (defmethod visit 'boolean? [node cursor attrs]
-  (simple-leaf node cursor attrs :checkbox))
+  (simple-leaf node cursor attrs {:type :checkbox}))
 
 (defmethod visit 'inst? [node cursor attrs]
-  (simple-leaf node cursor attrs :datetime-local))
+  (simple-leaf node cursor attrs {:type :datetime-local}))
 
 (defmethod visit 'uri? [node cursor attrs]
-  (simple-leaf node cursor attrs :url))
-
-(defn schema->form [schema data]
-  (let [root (r/atom data)]
-    [sa/form {:error true :warning true}
-     [visit (malli/schema schema) root {}]]))
-
-(defn schema2->form [schema root]
-  [sa/form {:error true :warning true}
-   [visit (malli/schema schema) root {}]])
-
-(defn data->form
-  ([data]
-   (data->form data data))
-  ([data-for-schema data-to-fill]
-   (schema->form (mp/provide [data-for-schema]) data-to-fill)))
+  (simple-leaf node cursor attrs {:type :url}))

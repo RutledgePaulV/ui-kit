@@ -2,7 +2,7 @@
   "For walking reagent trees.")
 
 (defn multi-fn? [x]
-  #?(:clj (instance? clojure.lang.MultiFn x)
+  #?(:clj  (instance? clojure.lang.MultiFn x)
      :cljs (instance? cljs.core.MultiFn x)))
 
 (defn function? [x]
@@ -56,4 +56,7 @@
   (walk-where (comp (set tagset) first) fun root))
 
 (defn walk-expand [root]
-  (walk-where (comp function? first) (partial apply apply) root))
+  (walk-where
+    (every-pred vector? (fn [x] (function? (first x))))
+    (fn [[fun & args]] (apply fun args))
+    root))

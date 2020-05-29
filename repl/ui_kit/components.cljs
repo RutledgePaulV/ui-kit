@@ -5,7 +5,7 @@
             [ui-kit.utils :as utils]
             [ui-kit.walkers :as walkers]
             [clojure.string :as strings]
-            [ui-kit.visitors :as visit]
+            [ui-kit.core :as ui]
             [reagent.core :as r]
             [malli.core :as malli]))
 
@@ -34,17 +34,17 @@
          [sa/segment
           (cond
             (= :visual @state)
-            [visit/schema2->form schema ratom]
+            [ui/schema->form* schema ratom]
             (= :data @state)
             [edn-viewer @ratom]
             (= :source @state)
             [edn-viewer
-             `[visit/schema->form
+             `[ui/schema->form
                ~(malli/form (malli/schema schema))
                ~(deref ratom)]]
             (= :expanded @state)
             [edn-viewer
-             (->> (visit/schema->form schema @ratom)
+             (->> (ui/schema->form schema @ratom)
                   (walkers/walk-expand)
                   (utils/ppstr)
                   (edn/read-string {:default tagged-literal}))])]]]))))

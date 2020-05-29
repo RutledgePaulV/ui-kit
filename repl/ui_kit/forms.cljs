@@ -3,7 +3,7 @@
     [devcards.core :refer [defcard-rg defcard]])
   (:require [devcards.core :as cards]
             [ui-kit.semantic :as sa]
-            [ui-kit.visitors :as ui]
+            [ui-kit.core :as ui]
             [ui-kit.components :as com]
             [reagent.core :as r]
             [ui-kit.walkers :as walkers]
@@ -118,3 +118,12 @@
            :city   "Chicago"
            :zip    60632
            :state  "Illinois"}))
+
+(defcard-rg sample-form
+  [ui/sample-form
+   [:vector
+    [:map
+     [:street string?]
+     [:city [:enum "Chicago" "Minneapolis"]]
+     [:zip pos-int?]
+     [:state [:enum "Illinois" "Minnesota"]]]]])

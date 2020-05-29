@@ -1,9 +1,12 @@
 (ns ui-kit.walkers
   "For walking reagent trees.")
 
+(defn multi-fn? [x]
+  #?(:clj (instance? clojure.lang.MultiFn x)
+     :cljs (instance? cljs.core.MultiFn x)))
+
 (defn function? [x]
-  (or (fn? x) #?(:clj (instance? clojure.lang.MultiFn x)
-                 :cljs (instance? cljs.core.MultiFn x))))
+  (or (fn? x) (multi-fn? x)))
 
 (defn normalize
   "Ensure component vectors are in [tag attrs & children] form."
@@ -53,4 +56,4 @@
   (walk-where (comp (set tagset) first) fun root))
 
 (defn walk-expand [root]
-  (walk-where (comp fn? first) (partial apply apply) root))
+  (walk-where (comp function? first) (partial apply apply) root))

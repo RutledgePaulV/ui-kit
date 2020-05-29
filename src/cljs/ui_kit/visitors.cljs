@@ -7,8 +7,29 @@
             [malli.provider :as mp]))
 
 (defmulti visit
+  "Turn a schema node into a reagent component.
+
+    node - the malli schema node
+    cursor - reagent cursor for that position in the form
+    attrs - any settings passed to a child from the parent
+
+   If node is not a leaf you're responsible for directly
+   rendering or recursively visiting the children.
+  "
   (fn [node cursor attrs]
     (malli/name node)))
+
+(defn is-required? [props attrs]
+  (if (contains? props :optional)
+    (not (:optional props))
+    (or (:required attrs) true)))
+
+(defn schema-dissoc [map-schema key]
+  (vec
+    (remove
+      (fn [x]
+        (and (vector? x) (= key (first x))))
+      map-schema)))
 
 (defn get-default-value [node]
   (let [props (malli/properties node)]
@@ -44,10 +65,12 @@
       [:div {}
        [sa/form-field
         [:label (or (:sui/label props) "Select variant")]
-        [sa/form-select
-         {:options   (for [[index child] (map-indexed vector children)]
-                       {:key index :value index :text (str "Option " index)})
-          :on-change #(reset! selected-option (.-value %2))}]]
+        [sa/dropdown
+         {:selection    true
+          :search       true
+          :options      (for [index (range (count children))]
+                          {:key index :value index :text (str "Option " index)})
+          :onChange     #(reset! selected-option (.-value %2))}]]
        [sa/form-group
         [visit (nth children @selected-option) cursor {}]]])))
 
@@ -57,6 +80,37 @@
           (for [[k v] children]
             (let [label (utils/kebab->title k)]
               (with-meta [visit v (r/cursor cursor [k]) {:label label}] {:key k}))))))
+
+
+(defmethod visit :multi [node cursor attrs]
+  (let [props    (malli/properties node)
+        children (malli/children node)
+        dispatch (get-in props [:dispatch])]
+    (cond
+      (keyword? dispatch)
+      (let [label (utils/kebab->title dispatch)
+            by-dv (into {} (map (juxt first identity)) children)]
+        [:div {}
+         [sa/form-field {:required (not (:optional props false))}
+          [:label label]
+          [sa/dropdown
+           {:selection    true
+            :search       true
+            :defaultValue (get @cursor dispatch)
+            :options      (vec (for [[dispatch-value] children]
+                                 {:key dispatch-value :value dispatch-value :text dispatch-value}))
+            :onChange     #(swap! cursor assoc dispatch (keyword (.-value %2)))}]]
+         (when-some [child (get by-dv (get-in @cursor [dispatch]))]
+           (let [child-without-dispatch-field
+                 (schema-dissoc (second child) dispatch)]
+             [sa/form-group {}
+              [visit child-without-dispatch-field cursor {}]]))])
+      :otherwise
+      (error-message node "only multi schemas that dispatch by keyword or equality are supported."))))
+
+(defmethod visit :maybe [node cursor attrs]
+  [visit (first (malli/children node)) cursor (assoc attrs :required false)])
+
 
 ; TODO: use fancier r/cursor with lens and lookup table of {row index} to avoid re-rendering
 ; each row each time.
@@ -93,12 +147,23 @@
         (for [[index child] (map-indexed vector (malli/children node))]
           [visit child (r/cursor cursor [index]) {}])))
 
+(defmethod visit := [node cursor attrs]
+  (let [props     (malli/properties node)
+        all-attrs (utils/select-ns props :sui)
+        value     (or (deref cursor) (:default props))
+        label     (or (:label all-attrs) (:label attrs))
+        required  (is-required? props attrs)]
+    [sa/form-field
+     (merge {:required required} (dissoc all-attrs :label))
+     (when (some? label) [:label label])
+     [sa/form-input {:value value :disabled true}]]))
+
 (defmethod visit :enum [node cursor attrs]
   (let [props     (malli/properties node)
         all-attrs (utils/select-ns props :sui)
         value     (or (deref cursor) (:default props))
         label     (or (:label all-attrs) (:label attrs))
-        required  (not (:optional props false))]
+        required  (is-required? props attrs)]
     [sa/form-field
      (merge {:required required} (dissoc all-attrs :label))
      (when (some? label) [:label label])
@@ -111,19 +176,34 @@
        :onChange     (fn [x data]
                        (reset! cursor (.-value data)))}]]))
 
-(defmethod visit 'string? [node cursor attrs]
+(defn simple-leaf [node cursor attrs type]
   (let [props     (malli/properties node)
         all-attrs (utils/select-ns props :sui)
         value     (or (deref cursor) (:default props))
         label     (or (:label all-attrs) (:label attrs))
-        required  (not (:optional props false))]
+        required  (is-required? props attrs)]
     [sa/form-field
      (merge {:required required} (dissoc all-attrs :label))
      (when (some? label) [:label label])
      [sa/form-input
-      {:type         :text
+      {:type         type
        :defaultValue (or value "")
        :on-blur      #(reset! cursor (utils/event->value %))}]]))
+
+(defmethod visit 'string? [node cursor attrs]
+  (simple-leaf node cursor attrs :text))
+
+(defmethod visit 'int? [node cursor attrs]
+  (simple-leaf node cursor attrs :number))
+
+(defmethod visit 'boolean? [node cursor attrs]
+  (simple-leaf node cursor attrs :checkbox))
+
+(defmethod visit 'inst? [node cursor attrs]
+  (simple-leaf node cursor attrs :datetime-local))
+
+(defmethod visit 'uri? [node cursor attrs]
+  (simple-leaf node cursor attrs :url))
 
 (defn schema->form [schema data]
   (let [root (r/atom data)]

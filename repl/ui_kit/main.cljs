@@ -4,7 +4,6 @@
   (:require [devcards.core :as cards]
             [ui-kit.forms]
             [ui-kit.semantic :as sa]
-            [ui-kit.core :as ui]
             [ui-kit.components]))
 
 

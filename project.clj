@@ -4,6 +4,7 @@
   [[org.clojure/clojure "1.10.1"]
    [org.clojure/clojurescript "1.10.764"]
    [cljsjs/semantic-ui-react "0.88.1-0"]
+   [cljsjs/semantic-ui-calendar-react "0.15.3-0"]
    [metosin/malli "5492dc7933ea9f7ce419a8ad97383b7eca201ad2"]
    [reagent "0.10.0"]]
 

@@ -121,9 +121,9 @@
          [:state [:enum "Alabama" "Alaska" "Arizona" "Arkansas"]]
          [:zip int?]
          [:quotes
-          [:map
-           [:amount int?]
-           [:timestamp inst?]]]]]]]])
+          [:vector
+           [:map
+            [:amount int?]]]]]]]]])
   (r/atom {}))
 
 (defcard-rg inferred-schema

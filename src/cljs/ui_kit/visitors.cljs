@@ -77,10 +77,10 @@
 
 (defmethod visit :map [node cursor context]
   (let [children (malli/children node)]
-    (into [sa/form-group]
-          (for [[k v] children]
-            (let [label (utils/kebab->title k)]
-              (with-meta [visit v (r/cursor cursor [k]) (child-context context {:label label})] {:key k}))))))
+    [:<>
+     (for [[k v] children]
+       (let [label (utils/kebab->title k)]
+         (with-meta [visit v (r/cursor cursor [k]) (child-context context {:label label})] {:key k})))]))
 
 
 (defmethod visit :multi [node cursor context]
@@ -145,7 +145,7 @@
            [sa/list-item
             [sa/button
              {:icon     true
-              :on-click (fn [] (swap! cursor (fn [old] (conj old (get-default-value child-schema)))))}
+              :on-click (fn [] (swap! cursor (fnil (fn [old] (conj old (get-default-value child-schema))) [])))}
              [sa/icon {:name "plus" :size :large}]]])]))
 
 (defmethod visit :tuple [node cursor context]

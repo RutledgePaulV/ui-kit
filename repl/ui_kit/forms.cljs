@@ -16,42 +16,40 @@
 
 (defcard-rg string-field
   (fn [data-atom _]
-    [com/inspectable data-atom string?])
+    [com/inspectable data-atom
+     [string? {:sui/label "Text"}]])
   (r/atom ""))
 
 (defcard-rg enum-field
   (fn [data-atom _]
-    [com/inspectable data-atom [:enum "Dogs" "Cats" "Birds"]])
+    [com/inspectable data-atom
+     [:enum {:sui/label "Pet"} "Dogs" "Cats" "Birds"]])
   (r/atom nil))
 
 (defcard-rg tuple
   (fn [data-atom _]
-    [com/inspectable data-atom [:tuple string? string?]])
+    [com/inspectable data-atom
+     [:tuple
+      [string? {:sui/label "Latitude"}]
+      [string? {:sui/label "Longitude"}]]])
   (r/atom [nil nil]))
 
 (defcard-rg datetime
   (fn [data-atom _]
-    [com/inspectable data-atom inst?])
+    [com/inspectable data-atom
+     [inst? {:sui/label "Instant"}]])
   (r/atom nil))
 
 (defcard-rg uri
   (fn [data-atom _]
-    [com/inspectable data-atom uri?])
+    [com/inspectable data-atom
+     [uri? {:sui/label "Uri"}]])
   (r/atom nil))
 
-(defcard-rg not-understood
-  (fn [data-atom _]
-    [com/inspectable data-atom
-     [:map
-      [:place
-       [:map
-        [:value zero?]
-        [:value2 string?]]]]])
-  (r/atom {}))
-;
 (defcard-rg vector
   (fn [data-atom _]
-    [com/inspectable data-atom [:vector string?]])
+    [com/inspectable data-atom
+     [:vector {:sui/label "Grocery List"} string?]])
   (r/atom []))
 
 (defcard-rg predetermined
@@ -61,7 +59,10 @@
 
 (defcard-rg anding
   (fn [data-atom _]
-    [com/inspectable data-atom [:and string? int?]])
+    [com/inspectable data-atom
+     [:and
+      [string? {:sui/label "Text"}]
+      [int? {:sui/label "Number"}]]])
   (r/atom nil))
 
 (defcard-rg oring
@@ -106,24 +107,68 @@
        [:state [:enum "Illinois" "Minnesota"]]]]])
   (r/atom [{:street "131 W Herring Drive"}]))
 
-(defcard-rg data->form
+(defcard-rg large
   (fn [data-atom _]
     [com/inspectable data-atom
      [:map
-      [:street string?]
-      [:city string?]
-      [:zip int?]
-      [:state [:enum "Illinois" "Minnesota"]]]])
+      [:first-name string?]
+      [:last-name string?]
+      [:properties
+       [:vector
+        [:map
+         [:address string?]
+         [:city string?]
+         [:state [:enum "Alabama" "Alaska" "Arizona" "Arkansas"]]
+         [:zip int?]
+         [:quotes
+          [:map
+           [:amount int?]
+           [:timestamp inst?]]]]]]]])
+  (r/atom {}))
+
+(defcard-rg inferred-schema
+  "## Inferred Schemas
+
+  Since Malli can infer schemas, you can generate a form given only the data
+  you want to generate the form for.
+
+  ```clojure
+  [ui/data->form
+    {:street \"131 W Herring Drive\"
+     :city   \"Chicago\"
+     :zip    60632
+     :state  \"Illinois\"}]
+  ```
+
+  ---"
+  (fn [data-atom _]
+    [ui/data->form* data-atom])
   (r/atom {:street "131 W Herring Drive"
            :city   "Chicago"
            :zip    60632
            :state  "Illinois"}))
 
-(defcard-rg sample-form
-  [ui/sample-form
-   [:vector
-    [:map
-     [:street string?]
-     [:city [:enum "Chicago" "Minneapolis"]]
-     [:zip pos-int?]
-     [:state [:enum "Illinois" "Minnesota"]]]]])
+(defcard-rg generators
+  "## Generators
+
+   Since Malli has generators it's trivial to create a form with random data.
+
+   ```clojure
+   [ui/sample-form
+     [:vector
+       [:map
+        [:street string?]
+        [:zip pos-int?]]]]
+   ```
+   ---"
+  (fn [data-atom _]
+    [sa/segment
+     [sa/button {:icon true :on-click #(swap! data-atom inc)}
+      [sa/icon {:name "refresh"}]]
+     [sa/divider {:hidden true}]
+     [ui/sample-form
+      [:vector
+       [:map
+        [:street string?]
+        [:zip [pos-int? {:counter @data-atom}]]]]]])
+  (r/atom 0))

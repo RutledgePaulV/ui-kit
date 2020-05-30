@@ -14,6 +14,9 @@
 (defn schema->form [schema data]
   [schema->form* schema (r/atom data)])
 
+(defn data->form* [root]
+  (schema->form* (mp/provide [@root]) root))
+
 (defn data->form
   ([data]
    (data->form data data))
@@ -21,5 +24,5 @@
    (schema->form (mp/provide [data-for-schema]) data-to-fill)))
 
 (defn sample-form [schema]
-  (let [data (mg/generate schema {:size 10})]
+  (let [data (mg/generate schema {:size 5})]
     [schema->form schema data]))

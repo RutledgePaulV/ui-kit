@@ -31,7 +31,7 @@
       (strings/replace
         #"[a-z]-[a-z]"
         (fn [match]
-          (str (first match) " " (strings/upper-case (second match)))))))
+          (str (first match) " " (strings/upper-case (nth match 2)))))))
 
 (defn camel->kebab [k]
   (-> (name k)

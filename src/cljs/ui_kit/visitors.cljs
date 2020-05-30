@@ -92,7 +92,7 @@
       (let [label (utils/kebab->title dispatch)
             by-dv (into {} (map (juxt first identity)) children)]
         [sa/form-group
-         [sa/form-field {:required (not (:optional props false))}
+         [sa/form-field {:required (is-required? props context)}
           [:label label]
           [sa/dropdown
            {:selection    true
@@ -114,29 +114,39 @@
 ; each row each time.
 (defmethod visit :vector [node cursor context]
   (let [[child-schema] (malli/children node)
-        child-values (or @cursor [])]
-    (conj (into [:div {}]
-                (for [index (range (count child-values))]
-                  [sa/form-group {:inline true :key (random-uuid)}
-                   [visit child-schema (r/cursor cursor [index]) (child-context context)]
-                   [sa/button
-                    {:icon     true
-                     :disabled (= 0 index)
-                     :on-click (fn [] (swap! cursor (fn [old] (utils/vec-swap old index (dec index)))))}
-                    [sa/icon {:name "arrow up" :size :small}]]
-                   [sa/button
-                    {:icon     true
-                     :disabled (= (count child-values) (inc index))
-                     :on-click (fn [] (swap! cursor (fn [old] (utils/vec-swap old index (inc index)))))}
-                    [sa/icon {:name "arrow down" :size :small}]]
-                   [sa/button
-                    {:icon     true
-                     :on-click (fn [] (swap! cursor (fn [old] (utils/vec-remove old index))))}
-                    [sa/icon {:name "delete" :size :small}]]]))
-          [sa/button
-           {:icon     true
-            :on-click (fn [] (swap! cursor (fn [old] (conj old (get-default-value child-schema)))))}
-           [sa/icon {:name "plus" :size :large}]])))
+        props        (malli/properties node)
+        child-values @cursor
+        child-count  (count child-values)
+        all-context  (utils/select-ns props :sui)
+        label        (or (:label all-context) (:label context))
+        required     (is-required? props context)]
+    [sa/form-field
+     (merge {:required required} (dissoc all-context :label))
+     (when (some? label) [:label label])
+     (conj (into [sa/list]
+                 (for [index (range child-count)]
+                   [sa/list-item
+                    [sa/form-group {:inline true :key (random-uuid)}
+                     [visit child-schema (r/cursor cursor [index]) (child-context context)]
+                     [sa/button
+                      {:icon     true
+                       :disabled (= 0 index)
+                       :on-click (fn [] (swap! cursor (fnil (fn [old] (utils/vec-swap old index (dec index))) [])))}
+                      [sa/icon {:name "arrow up" :size :small}]]
+                     [sa/button
+                      {:icon     true
+                       :disabled (= child-count (inc index))
+                       :on-click (fn [] (swap! cursor (fnil (fn [old] (utils/vec-swap old index (inc index))) [])))}
+                      [sa/icon {:name "arrow down" :size :small}]]
+                     [sa/button
+                      {:icon     true
+                       :on-click (fn [] (swap! cursor (fnil (fn [old] (utils/vec-remove old index)) [])))}
+                      [sa/icon {:name "delete" :size :small}]]]]))
+           [sa/list-item
+            [sa/button
+             {:icon     true
+              :on-click (fn [] (swap! cursor (fn [old] (conj old (get-default-value child-schema)))))}
+             [sa/icon {:name "plus" :size :large}]]])]))
 
 (defmethod visit :tuple [node cursor context]
   (into [sa/form-group {:inline true}]
@@ -152,7 +162,7 @@
     [sa/form-field
      (merge {:required required} (dissoc all-context :label))
      (when (some? label) [:label label])
-     [sa/form-input {:value value :disabled true}]]))
+     [sa/form-input {:value value :readOnly true}]]))
 
 (defmethod visit :enum [node cursor context]
   (let [props       (malli/properties node)

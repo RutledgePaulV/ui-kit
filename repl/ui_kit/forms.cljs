@@ -20,6 +20,12 @@
      [string? {:sui/label "Text"}]])
   (r/atom ""))
 
+(defcard-rg boolean-field
+  (fn [data-atom _]
+    [com/inspectable data-atom
+     [boolean? {:sui/label "Boolean"}]])
+  (r/atom false))
+
 (defcard-rg enum-field
   (fn [data-atom _]
     [com/inspectable data-atom
@@ -40,12 +46,6 @@
      [inst? {:sui/label "Instant"}]])
   (r/atom nil))
 
-(defcard-rg uri
-  (fn [data-atom _]
-    [com/inspectable data-atom
-     [uri? {:sui/label "Uri"}]])
-  (r/atom nil))
-
 (defcard-rg vector
   (fn [data-atom _]
     [com/inspectable data-atom
@@ -54,7 +54,7 @@
 
 (defcard-rg predetermined
   (fn [data-atom _]
-    [com/inspectable data-atom [:= "Testing"]])
+    [com/inspectable data-atom [:= {:sui/label "Read only"} "Testing"]])
   (r/atom "Testing"))
 
 (defcard-rg anding

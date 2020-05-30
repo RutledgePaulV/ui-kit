@@ -51,7 +51,7 @@
      [:code [:pre (utils/ppstr (m/form node))]]]]])
 
 (defmethod visit :default [node cursor context]
-  [error-message node "Unsupported schema. Add a defmethod to ui-kit.visitors/visit to remedy."])
+  [error-message node "Missing defmethod of ui-kit.visitors/visit for schema."])
 
 (defmethod visit :and [node cursor context]
   (let [children (malli/children node)]
@@ -209,10 +209,34 @@
   (simple-leaf node cursor context {:type :number}))
 
 (defmethod visit 'boolean? [node cursor context]
-  (simple-leaf node cursor context {:type :checkbox}))
+  (let [props       (malli/properties node)
+        all-context (utils/select-ns props :sui)
+        value       (or (deref cursor) (:default props))
+        label       (or (:label all-context) (:label context))
+        required    (is-required? props context)]
+    [sa/form-field
+     (merge {:required required} (dissoc all-context :label))
+     (when (some? label) [:label label])
+     [sa/form-radio
+      {:defaultChecked (if (some? value) true false)
+       :toggle         true
+       :error          (if nil {:content ""})
+       :on-change      #(reset! cursor (.-checked %2))}]]))
 
 (defmethod visit 'inst? [node cursor context]
-  (simple-leaf node cursor context {:type :datetime-local}))
+  (let [props       (malli/properties node)
+        all-context (utils/select-ns props :sui)
+        value       (or (deref cursor) (:default props))
+        label       (or (:label all-context) (:label context))
+        required    (is-required? props context)]
+    [sa/form-field
+     (merge {:required required} (dissoc all-context :label))
+     (when (some? label) [:label label])
+     [sa/date-time-input
+      {:value            (or value "")
+       :dateFormat       "MM-DD-YYYY"
+       :error            (if nil {:content ""})
+       :closable         true
+       :preserveViewMode false
+       :on-change        #(reset! cursor (.-value %2))}]]))
 
-(defmethod visit 'uri? [node cursor context]
-  (simple-leaf node cursor context {:type :url}))

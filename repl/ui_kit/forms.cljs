@@ -26,6 +26,12 @@
      [boolean? {:sui/label "Boolean"}]])
   (r/atom false))
 
+(defcard-rg regex-field
+  (fn [data-atom _]
+    [com/inspectable data-atom
+     [:re {:sui/label "Regex field"} #"test"]])
+  (r/atom ""))
+
 (defcard-rg enum-field
   (fn [data-atom _]
     [com/inspectable data-atom

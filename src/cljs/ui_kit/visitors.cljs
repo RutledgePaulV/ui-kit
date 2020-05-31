@@ -1,9 +1,30 @@
 (ns ui-kit.visitors
-  (:require [malli.core :as malli]
-            [ui-kit.semantic :as sa]
+  (:require [ui-kit.semantic :as sa]
             [reagent.core :as r]
             [ui-kit.utils :as utils]
-            [malli.core :as m]))
+            [malli.core :as m]
+            [malli.transform :as mt]
+            [malli.error :as me]))
+
+
+(defn power-transformer []
+  (mt/transformer
+    mt/json-transformer
+    mt/string-transformer
+    mt/collection-transformer
+    mt/strip-extra-keys-transformer
+    mt/default-value-transformer))
+
+(defn validate [node value]
+  (when-not (m/validate node value)
+    (me/humanize (m/explain node value))))
+
+(defn ctx->transformer [context]
+  (or (get-in context [:malli :transformer]) power-transformer))
+
+(defn coerce [node value context]
+  (let [transformer (ctx->transformer context)]
+    (m/decode node value transformer)))
 
 (defmulti visit
   "Turn a schema node into a reagent component.
@@ -16,7 +37,7 @@
    rendering or recursively visiting the children.
   "
   (fn [node cursor context]
-    (malli/name node)))
+    (m/name node)))
 
 (defn is-required? [props context]
   (if (contains? props :optional)
@@ -34,7 +55,7 @@
       map-schema)))
 
 (defn get-default-value [node]
-  (let [props (malli/properties node)]
+  (let [props (m/properties node)]
     (if-some [value (:default props)]
       value
       ; TODO
@@ -54,14 +75,14 @@
   [error-message node "Missing defmethod of ui-kit.visitors/visit for schema."])
 
 (defmethod visit :and [node cursor context]
-  (let [children (malli/children node)]
+  (let [children (m/children node)]
     (into [sa/form-group {}]
           (for [[index child] (map-indexed vector children)]
             (with-meta [visit child cursor (child-context context)] {:key index})))))
 
 (defmethod visit :or [node cursor context]
-  (let [children        (malli/children node)
-        props           (malli/properties node)
+  (let [children        (m/children node)
+        props           (m/properties node)
         selected-option (r/atom 0)]
     (fn []
       [sa/form-group
@@ -76,16 +97,14 @@
        [visit (nth children @selected-option) cursor (child-context context)]])))
 
 (defmethod visit :map [node cursor context]
-  (let [children (malli/children node)]
-    [:<>
-     (for [[k v] children]
-       (let [label (utils/kebab->title k)]
-         (with-meta [visit v (r/cursor cursor [k]) (child-context context {:label label})] {:key k})))]))
-
+  [:<> (for [[k v] (m/children node)]
+         (let [label (utils/kebab->title k)
+               ctx   (child-context context {:label label})]
+           (with-meta [visit v (r/cursor cursor [k]) ctx] {:key k})))])
 
 (defmethod visit :multi [node cursor context]
-  (let [props    (malli/properties node)
-        children (malli/children node)
+  (let [props    (m/properties node)
+        children (m/children node)
         dispatch (get-in props [:dispatch])]
     (cond
       (keyword? dispatch)
@@ -107,14 +126,14 @@
       (error-message node "only multi schemas that dispatch by keyword or equality are supported."))))
 
 (defmethod visit :maybe [node cursor context]
-  [visit (first (malli/children node)) cursor (assoc context :required false)])
+  [visit (first (m/children node)) cursor (assoc context :required false)])
 
 
 ; TODO: use fancier r/cursor with lens and lookup table of {row index} to avoid re-rendering
 ; each row each time.
 (defmethod visit :vector [node cursor context]
-  (let [[child-schema] (malli/children node)
-        props        (malli/properties node)
+  (let [[child-schema] (m/children node)
+        props        (m/properties node)
         child-values @cursor
         child-count  (count child-values)
         all-context  (utils/select-ns props :sui)
@@ -150,11 +169,11 @@
 
 (defmethod visit :tuple [node cursor context]
   (into [sa/form-group {:inline true}]
-        (for [[index child] (map-indexed vector (malli/children node))]
+        (for [[index child] (map-indexed vector (m/children node))]
           [visit child (r/cursor cursor [index]) (child-context context)])))
 
 (defmethod visit := [node cursor context]
-  (let [props       (malli/properties node)
+  (let [props       (m/properties node)
         all-context (utils/select-ns props :sui)
         value       (or (deref cursor) (:default props))
         label       (or (:label all-context) (:label context))
@@ -165,7 +184,7 @@
      [sa/form-input {:value value :readOnly true}]]))
 
 (defmethod visit :enum [node cursor context]
-  (let [props       (malli/properties node)
+  (let [props       (m/properties node)
         all-context (utils/select-ns props :sui)
         value       (or (deref cursor) (:default props))
         label       (or (:label all-context) (:label context))
@@ -177,12 +196,12 @@
       {:selection    true
        :search       true
        :defaultValue value
-       :options      (vec (for [child (malli/children node)]
+       :options      (vec (for [child (m/children node)]
                             {:key child :value child :text child}))
        :onChange     #(reset! cursor (.-value %2))}]]))
 
 (defn simple-leaf [node cursor context mixins]
-  (let [props       (malli/properties node)
+  (let [props       (m/properties node)
         all-context (utils/select-ns props :sui)
         value       (or (deref cursor) (:default props))
         label       (or (:label all-context) (:label context))
@@ -209,7 +228,7 @@
   (simple-leaf node cursor context {:type :number}))
 
 (defmethod visit 'boolean? [node cursor context]
-  (let [props       (malli/properties node)
+  (let [props       (m/properties node)
         all-context (utils/select-ns props :sui)
         value       (or (deref cursor) (:default props))
         label       (or (:label all-context) (:label context))
@@ -224,7 +243,7 @@
        :on-change      #(reset! cursor (.-checked %2))}]]))
 
 (defmethod visit 'inst? [node cursor context]
-  (let [props       (malli/properties node)
+  (let [props       (m/properties node)
         all-context (utils/select-ns props :sui)
         value       (or (deref cursor) (:default props))
         label       (or (:label all-context) (:label context))
@@ -234,7 +253,8 @@
      (when (some? label) [:label label])
      [sa/date-time-input
       {:value            (or value "")
-       :dateFormat       "MM-DD-YYYY"
+       :dateFormat       "MM/DD/YYYY"
+       :timeFormat       "ampm"
        :error            (if nil {:content ""})
        :closable         true
        :preserveViewMode false

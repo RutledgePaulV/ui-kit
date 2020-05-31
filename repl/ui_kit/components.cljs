@@ -1,7 +1,6 @@
 (ns ui-kit.components
   (:require [ui-kit.semantic :as sa]
             [devcards.util.edn-renderer :as edn-render]
-            [cljs.reader :as edn]
             [ui-kit.utils :as utils]
             [ui-kit.walkers :as walkers]
             [clojure.string :as strings]
@@ -13,7 +12,7 @@
   [:div.com-rigsomelight-rendered-edn.com-rigsomelight-devcards-typog
    {:key "devcards-edn-block"}
    (binding [edn-render/*key-counter* (atom 0)]
-     (edn-render/html edn))])
+     (edn-render/html (utils/prettify edn)))])
 
 (defn inspectable
   ([ratom schema]
@@ -44,8 +43,6 @@
                ~(deref ratom)]]
             (= :expanded @state)
             [edn-viewer
-             (->> (ui/schema->form schema @ratom)
-                  (walkers/walk-expand)
-                  (utils/ppstr)
-                  (edn/read-string {:default tagged-literal}))])]]]))))
+             (->> [ui/schema->form schema @ratom]
+                  (walkers/walk-expand))])]]]))))
 

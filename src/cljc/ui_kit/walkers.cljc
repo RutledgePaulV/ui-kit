@@ -8,6 +8,9 @@
 (defn function? [x]
   (or (fn? x) (multi-fn? x)))
 
+(defn expand [x]
+  (if (seq? x) x [x]))
+
 (defn normalize
   "Ensure component vectors are in [tag attrs & children] form."
   [cv]
@@ -20,9 +23,11 @@
         (function? (first cv))
         (into [(comp normalize (first cv))] (rest cv))
         (map? (second cv))
-        (into [(first cv) (second cv)] (map normalize (drop 2 cv)))
+        (into [(first cv) (second cv)]
+              (map normalize (mapcat expand (drop 2 cv))))
         (not-empty cv)
-        (into [(first cv) {}] (map normalize (drop 1 cv))))
+        (into [(first cv) {}]
+              (map normalize (mapcat expand (drop 1 cv)))))
       (merge (meta cv) {::normalized true}))
     :otherwise
     cv))
@@ -55,7 +60,9 @@
 (defn walk-tags [tagset fun root]
   (walk-where (comp (set tagset) first) fun root))
 
-(defn walk-expand [root]
+(defn walk-expand
+  "Fully expands/inlines a reagent tree (bottoms out at hiccup or react classes)"
+  [root]
   (walk-where
     (every-pred vector? (fn [x] (function? (first x))))
     (fn [[fun & args]] (apply fun args))

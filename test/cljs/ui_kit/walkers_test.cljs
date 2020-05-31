@@ -7,6 +7,10 @@
   (is (= [:p {} "Test"] (walkers/normalize [:p "Test"])))
   (is (= [:div {} [:p {} "Test"]] (walkers/normalize [:div [:p "Test"]]))))
 
+(deftest normalize-sequences
+  (is (= [:p {} [:div {} "a"] [:div {} "b"]]
+         (walkers/normalize [:p (for [x ["a" "b"]] [:div x])]))))
+
 (deftest expand-test
   (let [inner2 (fn [] [:div [:p "inner 2"]])
         inner  (fn [] [:div [:p "Inner 1"] [inner2]])

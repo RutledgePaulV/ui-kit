@@ -55,7 +55,8 @@
 (defcard-rg vector
   (fn [data-atom _]
     [com/inspectable data-atom
-     [:vector {:sui/label "Grocery List"} string?]])
+     [:vector {:sui/label "Grocery List"}
+      [string? {:sui/label "Item"}]]])
   (r/atom []))
 
 (defcard-rg predetermined

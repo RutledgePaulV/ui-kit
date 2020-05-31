@@ -75,17 +75,15 @@
   [error-message node "Missing defmethod of ui-kit.visitors/visit for schema."])
 
 (defmethod visit :and [node cursor context]
-  (let [children (m/children node)]
-    (into [sa/form-group {}]
-          (for [[index child] (map-indexed vector children)]
-            (with-meta [visit child cursor (child-context context)] {:key index})))))
+  [:<> (for [[index child] (map-indexed vector (m/children node))]
+         (with-meta [visit child cursor (child-context context)] {:key index}))])
 
 (defmethod visit :or [node cursor context]
   (let [children        (m/children node)
         props           (m/properties node)
         selected-option (r/atom 0)]
     (fn []
-      [sa/form-group
+      [:div
        [sa/form-field
         [:label (or (:sui/label props) "Select variant")]
         [sa/dropdown
@@ -110,7 +108,7 @@
       (keyword? dispatch)
       (let [label (utils/kebab->title dispatch)
             by-dv (into {} (map (juxt first identity)) children)]
-        [sa/form-group
+        [:div
          [sa/form-field {:required (is-required? props context)}
           [:label label]
           [sa/dropdown
@@ -142,11 +140,12 @@
     [sa/form-field
      (merge {:required required} (dissoc all-context :label))
      (when (some? label) [:label label])
-     (conj (into [sa/list]
+     (conj (into [sa/grid {:columns 2 :stackable true :divided "vertically"}]
                  (for [index (range child-count)]
-                   [sa/list-item
-                    [sa/form-group {:inline true :key (random-uuid)}
-                     [visit child-schema (r/cursor cursor [index]) (child-context context)]
+                   [sa/grid-row {:key (random-uuid)}
+                    [sa/grid-column {:width 12 :floated "left"}
+                     [visit child-schema (r/cursor cursor [index]) (child-context context)]]
+                    [sa/grid-column {:width 4 :floated "right" :textAlign "right"}
                      [sa/button
                       {:icon     true
                        :disabled (= 0 index)
@@ -159,13 +158,15 @@
                       [sa/icon {:name "arrow down" :size :small}]]
                      [sa/button
                       {:icon     true
+                       :class    "red"
                        :on-click (fn [] (swap! cursor (fnil (fn [old] (utils/vec-remove old index)) [])))}
                       [sa/icon {:name "delete" :size :small}]]]]))
-           [sa/list-item
-            [sa/button
-             {:icon     true
-              :on-click (fn [] (swap! cursor (fnil (fn [old] (conj old (get-default-value child-schema))) [])))}
-             [sa/icon {:name "plus" :size :large}]]])]))
+           [sa/grid-row
+            [sa/grid-column {:width 4 :floated "right" :textAlign "right"}
+             [sa/button
+              {:icon     true
+               :on-click (fn [] (swap! cursor (fnil (fn [old] (conj old (get-default-value child-schema))) [])))}
+              [sa/icon {:name "plus" :size :large}]]]])]))
 
 (defmethod visit :tuple [node cursor context]
   (into [sa/form-group {:inline true}]

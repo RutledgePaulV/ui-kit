@@ -1,6 +1,7 @@
 (ns ui-kit.utils
   (:require [clojure.string :as strings]
-            [cljs.pprint :as pprint]))
+            [cljs.pprint :as pprint]
+            [clojure.walk :as walk]))
 
 (defn vec-insert [coll pos item]
   (vec (concat (subvec coll 0 pos) [item] (subvec coll pos))))
@@ -18,8 +19,18 @@
                   [(keyword (name k)) v]))
               m)))
 
+(defn prettify [x]
+  (walk/postwalk
+    (fn [form]
+      (if (map? form)
+        (into (sorted-map) form)
+        form))
+    x))
+
 (defn ppstr [x]
-  (with-out-str (pprint/pprint x)))
+  (with-out-str
+    (pprint/pprint
+      (prettify x))))
 
 (defn event->value [event]
   (-> event .-target .-value))
@@ -30,13 +41,13 @@
       (strings/capitalize)
       (strings/replace
         #"[a-z]-[a-z]"
-        (fn [match]
-          (str (first match) " " (strings/upper-case (nth match 2)))))))
+        (fn [[terminal _ start]]
+          (str terminal " " (strings/upper-case start))))))
 
 (defn camel->kebab [k]
   (-> (name k)
       (strings/replace
         #"[a-z][A-Z]"
-        (fn [match]
-          (str (first match) "-" (second match))))
+        (fn [[terminal start]]
+          (str terminal "-" start)))
       (strings/lower-case)))

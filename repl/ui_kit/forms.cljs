@@ -3,16 +3,8 @@
     [devcards.core :refer [defcard-rg defcard]])
   (:require [devcards.core :as cards]
             [ui-kit.semantic :as sa]
-            [ui-kit.core :as ui]
             [ui-kit.components :as com]
-            [reagent.core :as r]
-            [ui-kit.walkers :as walkers]
-            [cljs.pprint :as pprint]))
-
-(defn view-markup [schema data]
-  (->> (ui/schema->form schema data)
-       (walkers/walk-expand)
-       (pprint/pprint)))
+            [reagent.core :as r]))
 
 (defcard-rg string-field
   (fn [data-atom _]
@@ -132,50 +124,3 @@
            [:map
             [:amount int?]]]]]]]]])
   (r/atom {}))
-
-(defcard-rg inferred-schema
-  "## Inferred Schemas
-
-  Since Malli can infer schemas, you can generate a form given only the data
-  you want to generate the form for.
-
-  ```clojure
-  [ui/data->form
-    {:street \"131 W Herring Drive\"
-     :city   \"Chicago\"
-     :zip    60632
-     :state  \"Illinois\"}]
-  ```
-
-  ---"
-  (fn [data-atom _]
-    [ui/data->form* data-atom])
-  (r/atom {:street "131 W Herring Drive"
-           :city   "Chicago"
-           :zip    60632
-           :state  "Illinois"}))
-
-(defcard-rg generators
-  "## Generators
-
-   Since Malli has generators it's trivial to create a form with random data.
-
-   ```clojure
-   [ui/sample-form
-     [:vector
-       [:map
-        [:street string?]
-        [:zip pos-int?]]]]
-   ```
-   ---"
-  (fn [data-atom _]
-    [sa/segment
-     [sa/button {:icon true :on-click #(swap! data-atom inc)}
-      [sa/icon {:name "refresh"}]]
-     [sa/divider {:hidden true}]
-     [ui/sample-form
-      [:vector
-       [:map
-        [:street string?]
-        [:zip [pos-int? {:counter @data-atom}]]]]]])
-  (r/atom 0))

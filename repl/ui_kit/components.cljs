@@ -38,11 +38,11 @@
             [edn-viewer @ratom]
             (= :source @state)
             [edn-viewer
-             `[ui/schema->form
+             `[ui/schema->form*
                ~(malli/form (malli/schema schema))
-               ~(deref ratom)]]
+               ~(list 'reagent.core/atom @ratom)]]
             (= :expanded @state)
             [edn-viewer
-             (->> [ui/schema->form schema @ratom]
+             (->> [ui/schema->form* schema ratom]
                   (walkers/walk-expand))])]]]))))
 

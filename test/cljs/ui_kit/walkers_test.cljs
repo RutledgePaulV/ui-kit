@@ -11,6 +11,9 @@
   (is (= [:p {} [:div {} "a"] [:div {} "b"]]
          (walkers/normalize [:p (for [x ["a" "b"]] [:div x])]))))
 
+(deftest expand-fun
+  (is (= [:div {} "Test"] (walkers/walk-expand (fn [] [:div "Test"])))))
+
 (deftest expand-test
   (let [inner2 (fn [] [:div [:p "inner 2"]])
         inner  (fn [] [:div [:p "Inner 1"] [inner2]])

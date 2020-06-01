@@ -143,9 +143,9 @@
      (conj (into [sa/grid {:columns 2 :stackable true :divided "vertically"}]
                  (for [index (range child-count)]
                    [sa/grid-row {:key (random-uuid)}
-                    [sa/grid-column {:width 12 :floated "left"}
+                    [sa/grid-column {:width 13 :floated "left"}
                      [visit child-schema (r/cursor cursor [index]) (child-context context)]]
-                    [sa/grid-column {:width 4 :floated "right" :textAlign "right"}
+                    [sa/grid-column {:width 3 :floated "right" :textAlign "right"}
                      [sa/button
                       {:icon     true
                        :disabled (= 0 index)

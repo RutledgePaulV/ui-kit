@@ -17,6 +17,8 @@
   (cond
     (some-> cv meta ::normalized)
     cv
+    (function? cv)
+    (fn [& args] (normalize (apply cv args)))
     (vector? cv)
     (with-meta
       (cond
@@ -37,6 +39,8 @@
   [fun root]
   (letfn [(walk-components* [fun root]
             (cond
+              (function? root)
+              (fun (fn [] (walk-components* fun (root))))
               (and (vector? root) (function? (first root)))
               (->> (drop 1 root)
                    (into [(fn [& args]
@@ -54,16 +58,16 @@
               root))]
     (walk-components* fun (normalize root))))
 
-(defn walk-where [pred fun root]
-  (walk-components #(if (pred %) (fun %) %) root))
-
-(defn walk-tags [tagset fun root]
-  (walk-where (comp (set tagset) first) fun root))
-
 (defn walk-expand
   "Fully expands/inlines a reagent tree (bottoms out at hiccup or react classes)"
   [root]
-  (walk-where
-    (every-pred vector? (fn [x] (function? (first x))))
-    (fn [[fun & args]] (apply fun args))
+  (walk-components
+    (fn [x]
+      (cond
+        (function? x)
+        (x)
+        (and (vector? x) (function? (first x)))
+        (apply (first x) (rest x))
+        :otherwise
+        x))
     root))

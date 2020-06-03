@@ -24,8 +24,3 @@
              [:div {}
               [:p {} "inner 2"]]]]
            (walkers/walk-expand outer)))))
-
-(deftest walk-tags-test
-  (let [tree   [:div [:p "Stuff"] [:p "Thing"]]
-        result (walkers/walk-tags #{:p} (fn [cv] (assoc-in cv [1 :key] true)) tree)]
-    (is (= [:div {} [:p {:key true} "Stuff"] [:p {:key true} "Thing"]] result))))

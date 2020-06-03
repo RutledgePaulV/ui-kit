@@ -18,7 +18,7 @@
     (some-> cv meta ::normalized)
     cv
     (function? cv)
-    (fn [& args] (normalize (apply cv args)))
+    (comp normalize cv)
     (vector? cv)
     (with-meta
       (cond

@@ -89,6 +89,7 @@
         [sa/dropdown
          {:selection true
           :search    true
+          :defaultValue @selected-option
           :options   (for [index (range (count children))]
                        {:key index :value index :text (str "Option " index)})
           :onChange  #(reset! selected-option (.-value %2))}]]

@@ -37,7 +37,7 @@
    rendering or recursively visiting the children.
   "
   (fn [node cursor context]
-    (m/name node)))
+    (m/type node)))
 
 (defn is-required? [props context]
   (if (contains? props :optional)

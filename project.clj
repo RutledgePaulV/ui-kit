@@ -5,7 +5,7 @@
    [org.clojure/clojurescript "1.10.764"]
    [cljsjs/semantic-ui-react "0.88.1-0"]
    [cljsjs/semantic-ui-calendar-react "0.15.3-0"]
-   [metosin/malli "02bbb777014cb3f3d5c07c01a74b56e2b6a0faa7"]
+   [metosin/malli "4026ddd1a2c86839f26abb5d70f004aaae751dcf"]
    [reagent "0.10.0"]]
 
   :plugins
@@ -16,9 +16,9 @@
 
   :profiles
   {:dev {:source-paths   ["repl"]
-         :dependencies   [[com.bhauman/figwheel-main "0.2.5"]
+         :dependencies   [[com.bhauman/figwheel-main "0.2.8"]
                           [cider/piggieback "0.5.0"]
-                          [devcards "0.2.5"]]
+                          [devcards "0.2.7"]]
          :resource-paths ["target"]
          :repl-options   {:init-ns          user
                           :nrepl-middleware [cider.piggieback/wrap-cljs-repl]}}}

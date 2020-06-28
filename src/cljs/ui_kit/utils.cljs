@@ -4,10 +4,10 @@
             [clojure.walk :as walk]))
 
 (defn vec-insert [coll pos item]
-  (vec (concat (subvec coll 0 pos) [item] (subvec coll pos))))
+  (into (subvec coll 0 pos) (cons item (subvec coll pos))))
 
 (defn vec-remove [coll pos]
-  (vec (concat (subvec coll 0 pos) (subvec coll (inc pos)))))
+  (into (subvec coll 0 pos) (subvec coll (inc pos))))
 
 (defn vec-swap [coll a b]
   (-> coll (assoc b (nth coll a)) (assoc a (nth coll b))))
